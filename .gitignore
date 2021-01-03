@@ -32,3 +32,4 @@
 *.app
 
 cppFormatter.cpp
+/.vscode/
