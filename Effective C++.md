@@ -416,7 +416,7 @@ class Directory {
 public:
     Directory(auto... params) {
         ...
-        std::size_t disks = FileSystem::get();  // 如此使用
+        std::size_t disks = FileSystem::get().numDisks();  // 如此使用
         ...
     }
 };
@@ -434,3 +434,33 @@ Directory& tempDir() {
 - 为避免**定义在不同编译单元内的 non-local static 对象初始化次序问题** ，使用 **local static 对象**替换**non-local static 对象**，即 **Singleton** 模式
 
 ---
+
+# 了解 **C++** 默默编写并调用哪些函数
+
+## **empty class** 不再是 **empty class**
+
+```cpp
+class Empty {};
+```
+
+**C++** 处理之后等价于你写了如下代码
+
+```cpp
+class Empty {
+public:
+    Empty() {}                              // default 构造函数
+    ~Empty() {}                             // copy 构造函数
+    Empty(const Empty& rhs) {}              // 析构函数
+    Empty& operator=(const Empty& rhs) {}   // copy assigniment 操作符
+};
+```
+
+如果你没自己声明，**C++** 默默为你声明 **copy 构造函数**、**copy assignment 操作符**、**析构函数**。此外，如果你没有声明任何**构造函数**，**C++** 便会为你声明一个 **default 构造函数**。所有这些函数都是 `public` 且 `inline` 的
+
+## **default 构造函数** 和 **析构函数**
+
+**default 构造函数** 和 **析构函数** 主要是给编译器一个地方来放置*藏身幕后*的代码，像是调用 **base classes** 和 **non-static** 成员变量的**构造函数**和**析构函数**。注意编译器产出的**析构函数**是个 **non-virtual**，除非该 **class** 的 **base class** 自身声明了 **virtual 析构函数**。
+
+##  **copy 构造函数** 和 **copy assignment 操作符**
+
+**copy 构造函数** 和 **copy assignment 操作符**，编译器创建的版本也知识单纯的把来源对象中的每一个 **non-static** 成员变量拷贝到目标对象
