@@ -8,9 +8,9 @@
   - [2.3. 宏函数](#23-宏函数)
   - [2.4. Summary](#24-summary)
 - [3. 尽可能使用 `const`](#3-尽可能使用-const)
-  - [3.1. `const` 出现在 `*` 左边表示指针本身是常量，出现在 `*` 右边表示被指物是常量，写在类型之前还是之后意义相同](#31-const-出现在--左边表示指针本身是常量出现在--右边表示被指物是常量写在类型之前还是之后意义相同)
+  - [3.1. `const` 出现在 `*` 左或右意义相同](#31-const-出现在--左或右意义相同)
   - [3.2. 对于 **iterator**](#32-对于-iterator)
-  - [3.3. 令函数返回一个常量值，往往可以降低因客户错误而造成的意外，而又不至于放弃安全性和高效性。](#33-令函数返回一个常量值往往可以降低因客户错误而造成的意外而又不至于放弃安全性和高效性)
+  - [3.3. 令函数返回一个常量值](#33-令函数返回一个常量值)
   - [3.4. `const` 成员函数](#34-const-成员函数)
     - [3.4.1. **bitwise constness** 流派](#341-bitwise-constness-流派)
     - [3.4.2. **logical constness** 流派](#342-logical-constness-流派)
@@ -18,10 +18,23 @@
   - [3.6. Summary](#36-summary)
 - [4. 确定对象被使用前已先被初始化](#4-确定对象被使用前已先被初始化)
   - [4.1. 内置类型的初始化](#41-内置类型的初始化)
-  - [4.2. 构造函数](#42-构造函数)
+  - [4.2. **构造函数**](#42-构造函数)
   - [4.3. 定义在不同编译单元内的 **non-local static** 对象](#43-定义在不同编译单元内的-non-local-static-对象)
     - [4.3.1. Singleton](#431-singleton)
   - [4.4. Summary](#44-summary)
+- [5. 了解 **C++** 默默编写并调用哪些函数](#5-了解-c-默默编写并调用哪些函数)
+  - [5.1. **empty class** 不再是 **empty class**](#51-empty-class-不再是-empty-class)
+  - [5.2. **default 构造函数** 和 **析构函数**](#52-default-构造函数-和-析构函数)
+  - [5.3. **copy 构造函数** 和 **copy assignment 操作符**](#53-copy-构造函数-和-copy-assignment-操作符)
+  - [5.4. Summary](#54-summary)
+- [6. 若不想使用编译器自动生成的函数，应当明确拒绝](#6-若不想使用编译器自动生成的函数应当明确拒绝)
+  - [6.1. 声明为 `private`](#61-声明为-private)
+  - [6.2. 声明为 `delete`](#62-声明为-delete)
+  - [6.3. 继承自 **Uncopyable**](#63-继承自-uncopyable)
+  - [6.4. Summary](#64-summary)
+- [7. 为多态基类声明 **virtual 析构函数**](#7-为多态基类声明-virtual-析构函数)
+  - [7.1. 多态基类](#71-多态基类)
+  - [7.2. **抽象类 (abstract classes)**](#72-抽象类-abstract-classes)
 
 ---
 
@@ -44,7 +57,7 @@
 
 ## 1.3. Summary
 
-- **C++** 高效编程守则视情况而变化，取决于你使用 **C++** 的哪一个部分
+- **C++** 高效编程守则视情况而变化，取决于你使用 **C++** 的哪一个部分。
 
 ---
 
@@ -160,14 +173,16 @@ constexpr auto callWithMax = [] <typename T> (const T &a, const T &b) {
 
 ## 2.4. Summary
 
-- 对于单纯常量，最好以 `const` 对象或 `enums` 替换 `#define`
-- 对于形似函数的宏 (`macros`)，最好改用 `inline` 函数替换 `#define`
+- 对于单纯常量，最好以 `const` 对象或 `enums` 替换 `#define`。
+- 对于形似函数的宏 (`macros`)，最好改用 `inline` 函数替换 `#define`。
 
 ---
 
 # 3. 尽可能使用 `const`
 
-## 3.1. `const` 出现在 `*` 左边表示指针本身是常量，出现在 `*` 右边表示被指物是常量，写在类型之前还是之后意义相同
+## 3.1. `const` 出现在 `*` 左或右意义相同
+
+`const` 出现在 `*` 左边表示指针本身是常量，出现在 `*` 右边表示被指物是常量，写在类型之前还是之后意义相同。
 
 ```cpp
 const int* a;
@@ -190,7 +205,9 @@ std::vector<int>::iterator citer =
 +++citer;         // 没问题，改变 citer
 ```
 
-## 3.3. 令函数返回一个常量值，往往可以降低因客户错误而造成的意外，而又不至于放弃安全性和高效性。
+## 3.3. 令函数返回一个常量值
+
+令函数返回一个常量值，往往可以降低因客户错误而造成的意外，而又不至于放弃安全性和高效性。
 
 ```cpp
 class Rational {};
@@ -300,9 +317,9 @@ public:
 
 ## 3.6. Summary
 
-- 将某些东西声明为 `const` 可帮助编译器侦测出错误用法。`const` 可被施加于任何作用域内的**对象**、**函数参数**、**函数返回类型**、**成员函数本体**
-- 编译器强制实行 **bitwise constness**，但你编写程序时应该使用**概念上的常量性 (conceptual constness)**
-- 当 `const` 和 `non-const` 成员函数有着实质等价的实现时，令  `non-const` 版本调用 `const` 版本可避免代码重复
+- 将某些东西声明为 `const` 可帮助编译器侦测出错误用法。`const` 可被施加于任何作用域内的**对象**、**函数参数**、**函数返回类型**、**成员函数本体**。
+- 编译器强制实行 **bitwise constness**，但你编写程序时应该使用**概念上的常量性 (conceptual constness)**。
+- 当 `const` 和 `non-const` 成员函数有着实质等价的实现时，令  `non-const` 版本调用 `const` 版本可避免代码重复。
 
 ---
 
@@ -320,9 +337,9 @@ double d;
 std::cin >> d;                          // 以读取 input stream 的方式进行初始化
 ```
 
-## 4.2. 构造函数
+## 4.2. **构造函数**
 
-确保每一个构造函数都将对象的每一个成员初始化。首选使用 **成员初值列 (member initialization list)** 进行初始化操作，可避免某些不必要的复制操作。
+确保每一个**构造函数**都将对象的每一个成员初始化。首选使用 **成员初值列 (member initialization list)** 进行初始化操作，可避免某些不必要的复制操作。
 
 ```cpp
 class PhoneNumber {};
@@ -430,14 +447,14 @@ Directory& tempDir() {
 ## 4.4. Summary
 
 - 为内置类型对象进行手工初始化，因为 **C++** 不保证初始化它们
-- 构造函数最好使用**成员初值列 (member initialization list)**，而不要在构造函数本体里使用赋值操作；**初值列**中列出的成员变量初始化顺序为它们在 `class` 中的声明顺序
-- 为避免**定义在不同编译单元内的 non-local static 对象初始化次序问题** ，使用 **local static 对象**替换**non-local static 对象**，即 **Singleton** 模式
+- 构造函数最好使用**成员初值列 (member initialization list)**，而不要在构造函数本体里使用赋值操作；**初值列**中列出的成员变量初始化顺序为它们在 `class` 中的声明顺序。
+- 为避免**定义在不同编译单元内的 non-local static 对象初始化次序问题** ，使用 **local static 对象**替换**non-local static 对象**，即 **Singleton** 模式。
 
 ---
 
-# 了解 **C++** 默默编写并调用哪些函数
+# 5. 了解 **C++** 默默编写并调用哪些函数
 
-## **empty class** 不再是 **empty class**
+## 5.1. **empty class** 不再是 **empty class**
 
 ```cpp
 class Empty {};
@@ -448,19 +465,169 @@ class Empty {};
 ```cpp
 class Empty {
 public:
-    Empty() {}                              // default 构造函数
-    ~Empty() {}                             // copy 构造函数
-    Empty(const Empty& rhs) {}              // 析构函数
-    Empty& operator=(const Empty& rhs) {}   // copy assigniment 操作符
+    Empty() = default;                             // default 构造函数
+    ~Empty() = default;                            // default 析构函数
+    Empty(Empty&& rhs) = default;                  // default move 构造函数 C++ 1x
+    Empty(const Empty& rhs) = default;             // default copy 构造函数
+    Empty& operator=(Empty&& rhs) = default;       // default move assigniment 操作符 C++ 1x
+    Empty& operator=(const Empty& rhs) = default;  // default copy assigniment 操作符
 };
 ```
 
-如果你没自己声明，**C++** 默默为你声明 **copy 构造函数**、**copy assignment 操作符**、**析构函数**。此外，如果你没有声明任何**构造函数**，**C++** 便会为你声明一个 **default 构造函数**。所有这些函数都是 `public` 且 `inline` 的
+如果你没自己声明，**C++** 默默为你声明 **copy 构造函数**、**copy assignment 操作符**、**析构函数**。此外，如果你没有声明任何**构造函数**，**C++** 便会为你声明一个 **default 构造函数**。所有这些函数都是 `public` 且 `inline` 的。若你自己同时没声明 **copy 构造函数**、**copy assignment 操作符**、**析构函数** 三者，**C++** 还会为你声明 **move 构造函数** 和 **move assignment 操作符** *（留在 **Effective Modern C++** 中讨论）*。
 
-## **default 构造函数** 和 **析构函数**
+## 5.2. **default 构造函数** 和 **析构函数**
 
 **default 构造函数** 和 **析构函数** 主要是给编译器一个地方来放置*藏身幕后*的代码，像是调用 **base classes** 和 **non-static** 成员变量的**构造函数**和**析构函数**。注意编译器产出的**析构函数**是个 **non-virtual**，除非该 **class** 的 **base class** 自身声明了 **virtual 析构函数**。
 
-##  **copy 构造函数** 和 **copy assignment 操作符**
+##  5.3. **copy 构造函数** 和 **copy assignment 操作符**
 
-**copy 构造函数** 和 **copy assignment 操作符**，编译器创建的版本也知识单纯的把来源对象中的每一个 **non-static** 成员变量拷贝到目标对象
+**copy 构造函数** 和 **copy assignment 操作符**，编译器创建的版本也只是单纯的把来源对象中的每一个 **non-static** 成员变量拷贝到目标对象。
+
+- 如果你打算在一个 *内含 reference 成员* 或 *内含 const 成员* 的 **class** 内支持**赋值操作**，你必须自己定义 **copy assignment 操作符**。
+- 如果某个 **base classes** 将 **copy assignment 操作符** 声明为 `private` ，编译器将拒绝为 **derived classes** 生成一个 **copy assignment 操作符**。
+
+## 5.4. Summary
+
+- 编译器暗自会为 `class` 创建 **default 构造函数**、**copy 构造函数** 和 **copy assignment 操作符**，以及**析构函数** *(有时还包括 **move 构造函数** 和 **move assignment 操作符**)*。
+
+---
+
+# 6. 若不想使用编译器自动生成的函数，应当明确拒绝
+
+通常如果你不希望 `class` 支持某一特定机能，只要不声明对应的函数即可。但这个策略对**copy 构造函数** 和 **copy assignment 操作符**并不起作用[条款 5](#5-了解-c-默默编写并调用哪些函数)已经指出。如果你不希望你的 `class` 被复制，以下几个方法可以避免此问题
+
+## 6.1. 声明为 `private`
+
+```cpp
+// C++ 0x
+class HomeForSale {
+private:
+    HomeForSale(const HomeForSale&);             // 复制构造函数
+    HomeForSale& operator=(const HomeForSale&);  // 复制赋值运算符
+public:
+    ...
+};
+```
+
+## 6.2. 声明为 `delete`
+
+```cpp
+// C++ 11 起
+class HomeForSale {
+public:
+    HomeForSale(const HomeForSale&) = delete;             // 弃置复制构造函数
+    HomeForSale& operator=(const HomeForSale&) = delete;  // 弃置复制赋值运算符
+    ...
+};
+```
+
+## 6.3. 继承自 **Uncopyable**
+
+```cpp
+// C++ 11 起
+class Uncopyable {
+protected:
+    Uncopyable() = default;                             // 子类可调用 构造函数 和 析构函数
+    ~Uncopyable() = default;                            // 由于 Uncopyable 不含数据成员，所以不必是 virtual
+public:
+    Uncopyable(const Uncopyable&) = delete;             // 复制构造函数
+    Uncopyable& operator=(const Uncopyable&) = delete;  // 复制赋值运算符
+};
+
+class HomeForSale : private Uncopyable {                // private 继承
+public:
+    ...
+};
+```
+
+如果想要在 **C++ 0x** 或 **C++ 1x** 中都能通过继承某个 **class** 达到阻止编译器生成 **copy 构造函数** 和 **copy assignment 操作符** 的目的的话，可转向使用 `boost::noncopyable`，其定义如下 *(简化版)*
+
+```cpp
+class noncopyable {
+protected:
+#if !defined(BOOST_NO_CXX11_DEFAULTED_FUNCTIONS) && !defined(BOOST_NO_CXX11_NON_PUBLIC_DEFAULTED_FUNCTIONS)
+    BOOST_CONSTEXPR noncopyable() = default;  // 根据 C++ 版本不同，默认构造函数可能为 constexpr
+    ~noncopyable() = default;
+#else
+    noncopyable() {}
+    ~noncopyable() {}
+#endif
+#if !defined(BOOST_NO_CXX11_DELETED_FUNCTIONS)
+    noncopyable(const noncopyable&) = delete;
+    noncopyable& operator=(const noncopyable&) = delete;
+#else
+private:// emphasize the following members are private
+    noncopyable(const noncopyable&);
+    noncopyable& operator=(const noncopyable&);
+#endif
+};
+```
+
+使用方法也差不多
+
+```cpp
+#include <boost/core/noncopyable.hpp>
+class HomeForSale: private boost::noncopyable {
+public:
+    ...
+};
+```
+
+**Uncopyable** *(或  `boost::noncopyable`)* 具备以下几个特点
+
+- 不一定以 `public` 继承它。
+- 不含数据
+- **析构函数** 不一定得是 `virtual`
+
+## 6.4. Summary
+
+- 为驳回编译器 *(暗自)* 提供的机能，可将相应的成员函数声明为 `private` 并且不予实现 *(C++ 1x 中通常通过 `delete` 方式)* 。
+- 使用像 **Uncopyable** 这样的 **base class** 也可以。
+
+---
+
+# 7. 为多态基类声明 **virtual 析构函数**
+
+## 7.1. 多态基类
+
+```cpp
+class TimeKeeper {  // base class
+public:
+    TimeKeeper();
+    ~TimeKeeper();  // 非 virtual 析构函数
+    ...
+};
+
+class AtomicClock : public TimeKeeper { ... };  // drived class
+
+TimeKeeper* ptk = new AtomicClock();
+delete ptk;        // 未定义行为，可能错误！
+```
+
+上述代码中，删除 `ptk` 后会造成一个诡异的 **局部销毁** 的对象，这可能是资源泄露、败坏数据结构、在调试期上浪费许多时间的绝佳途径。
+
+消除这一问题的做法很简单：给 **base class** 一个 **virtual 析构函数**
+
+```cpp
+class TimeKeeper {  // base class
+public:
+    TimeKeeper();
+    virtual ~TimeKeeper();  // 非 virtual 析构函数
+    ...
+};
+
+class AtomicClock : public TimeKeeper { ... };  // drived class
+
+TimeKeeper* ptk = new AtomicClock();
+delete ptk;        // 正确
+```
+
+但令所有 **class** 的 **析构函数** 都为 `virtual` 也并不是一个好主意。欲实现 **virtual 函数** ，对象必须携带某些信息来决定在运行期应该调用哪一个 **virtual 函数**。这份信息由一个 **vptr (virtual table pointer)** 指针指出。**vptr** 指向一个由函数指针组成的数组 **vtbl (virtual table)**。每个带有 **virtual 函数** 的 `class` 都有一个 **vtbl**，这意味着 **vtbl** 将会占用额外的存储空间。
+
+- 只有当 `class` 内含有至少一个 **virtual 函数** 时才为它声明 **virtual 析构函数**。
+- 不要企图继承自一些 **STL 容器** *(vector, list, set, unordered_map, etc.)*，因为他们没有声明 **virtual 析构函数**。
+
+## 7.2. **抽象类 (abstract classes)**
+
+含有一个及以上的 **pure virtual 函数** 的 `class` 被称为 **抽象类**，它不能被 **实体化 (instantiated)**。
