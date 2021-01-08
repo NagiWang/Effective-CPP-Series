@@ -589,7 +589,7 @@ public:
 
 # 7. 为多态基类声明 **virtual 析构函数**
 
-## 7.1. 多态基类
+## 7.1. 多态基类 (polymorphic base classes)
 
 ```cpp
 class TimeKeeper {  // base class
@@ -628,6 +628,6 @@ delete ptk;        // 正确
 - 只有当 `class` 内含有至少一个 **virtual 函数** 时才为它声明 **virtual 析构函数**。
 - 不要企图继承自一些 **STL 容器** *(vector, list, set, unordered_map, etc.)*，因为他们没有声明 **virtual 析构函数**。
 
-## 7.2. **抽象类 (abstract classes)**
+## 7.2. 抽象类 (abstract classes)
 
 含有一个及以上的 **pure virtual 函数** 的 `class` 被称为 **抽象类**，它不能被 **实体化 (instantiated)**。
