@@ -33,8 +33,9 @@
   - [6.3. 继承自 **Uncopyable**](#63-继承自-uncopyable)
   - [6.4. Summary](#64-summary)
 - [7. 为多态基类声明 **virtual 析构函数**](#7-为多态基类声明-virtual-析构函数)
-  - [7.1. 多态基类](#71-多态基类)
-  - [7.2. **抽象类 (abstract classes)**](#72-抽象类-abstract-classes)
+  - [7.1. 多态基类 (polymorphic base classes)](#71-多态基类-polymorphic-base-classes)
+  - [7.2. 抽象类 (abstract classes)](#72-抽象类-abstract-classes)
+  - [7.3. Summary](#73-summary)
 
 ---
 
@@ -592,17 +593,17 @@ public:
 ## 7.1. 多态基类 (polymorphic base classes)
 
 ```cpp
-class TimeKeeper {  // base class
+class TimeKeeper {                              // base class
 public:
     TimeKeeper();
-    ~TimeKeeper();  // 非 virtual 析构函数
+    ~TimeKeeper();                              // 非 virtual 析构函数
     ...
 };
 
 class AtomicClock : public TimeKeeper { ... };  // drived class
 
 TimeKeeper* ptk = new AtomicClock();
-delete ptk;        // 未定义行为，可能错误！
+delete ptk;                                     // 未定义行为，可能错误！
 ```
 
 上述代码中，删除 `ptk` 后会造成一个诡异的 **局部销毁** 的对象，这可能是资源泄露、败坏数据结构、在调试期上浪费许多时间的绝佳途径。
@@ -610,17 +611,17 @@ delete ptk;        // 未定义行为，可能错误！
 消除这一问题的做法很简单：给 **base class** 一个 **virtual 析构函数**
 
 ```cpp
-class TimeKeeper {  // base class
+class TimeKeeper {                              // base class
 public:
     TimeKeeper();
-    virtual ~TimeKeeper();  // 非 virtual 析构函数
+    virtual ~TimeKeeper();                      // 非 virtual 析构函数
     ...
 };
 
 class AtomicClock : public TimeKeeper { ... };  // drived class
 
 TimeKeeper* ptk = new AtomicClock();
-delete ptk;        // 正确
+delete ptk;                                     // 行为正确
 ```
 
 但令所有 **class** 的 **析构函数** 都为 `virtual` 也并不是一个好主意。欲实现 **virtual 函数** ，对象必须携带某些信息来决定在运行期应该调用哪一个 **virtual 函数**。这份信息由一个 **vptr (virtual table pointer)** 指针指出。**vptr** 指向一个由函数指针组成的数组 **vtbl (virtual table)**。每个带有 **virtual 函数** 的 `class` 都有一个 **vtbl**，这意味着 **vtbl** 将会占用额外的存储空间。
@@ -630,4 +631,21 @@ delete ptk;        // 正确
 
 ## 7.2. 抽象类 (abstract classes)
 
-含有一个及以上的 **pure virtual 函数** 的 `class` 被称为 **抽象类**，它不能被 **实体化 (instantiated)**。
+含有一个及以上的 **pure virtual 函数** 的 `class` 被称为 **抽象类**，它不能被 **实例化 (instantiated)**。当然，**pure virtual 函数** 也应该有一个 **virtual 函数**。但是 **abstract classes** 也仍然需要一个 **virtual 析构函数** ，且不只是声明，还需要其定义，否则编译器将会发出抱怨。
+
+```cpp
+class AWOV {                    // AWOV = "Abstract w/o Viturals"
+public:
+    virtual int get() = 0;      // 某个纯虚函数
+    ...
+    virtual ~AWOV() = default;  // C++ 1x
+//  virtual ~AWOV() {};         // C++ 0x
+    ...
+};
+```
+
+## 7.3. Summary
+
+- **多态基类 (polymorphic base classes)** 应该声明一个 **virtual 析构函数**。
+- 如果 `class` 内含任何 **virtual 函数** ，它就应该有一个 **virtual 析构函数**。
+- **classes** 如果不是设计作为 **base class** 使用，或不是为了具备 **多态性**，则不应该声明 **virtual 析构函数**。

@@ -41,5 +41,6 @@ Effective C++ Series ( Effective C++, More Effective C++, Effective Modern C++, 
   - [6.3. 继承自 **Uncopyable**](./Effective%20C++.md#63-继承自-uncopyable)
   - [6.4. Summary](./Effective%20C++.md#64-summary)
 - [7. 为多态基类声明 **virtual 析构函数**](./Effective%20C++.md#7-为多态基类声明-virtual-析构函数)
-  - [7.1. 多态基类](./Effective%20C++.md#71-多态基类)
-  - [7.2. **抽象类 (abstract classes)**](./Effective%20C++.md#72-抽象类-abstract-classes)
+  - [7.1. 多态基类 (polymorphic base classes)](./Effective%20C++.md#71-多态基类-polymorphic-base-classes)
+  - [7.2. 抽象类 (abstract classes)](./Effective%20C++.md#72-抽象类-abstract-classes)
+  - [7.3. Summary](./Effective%20C++.md#73-summary)
