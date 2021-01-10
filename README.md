@@ -1,6 +1,7 @@
 ![bb](img/bb.png)
 
 ---
+
 # Effective CPP Series
 
 Effective C++ Series ( Effective C++, More Effective C++, Effective Modern C++, etc. ) 读书笔记，记录一些自己认为重要的东西。笔记并不完全与书上一致，有引入一些 **C++ 1x** *(C++ 11 ~ C++ 20)* 的新特性。
