@@ -1,10 +1,14 @@
 ![bb](img/bb.png)
 
+---
 # Effective-CPP-Series
 
 Effective C++ Series ( Effective C++, More Effective C++, Effective Modern C++, etc. ) 读书笔记，记录一些自己认为重要的东西。
 
-# [Effective C++](Effective%20C++.md)
+---
+
+## [Effective C++](Effective%20C++.md)
+
 - [让自己习惯 **C++**](./Effective%20C++.md#1-视-c-语言为一个联邦)
   - [1. 视 **C++** 语言为一个联邦](./Effective%20C++.md#1-视-c-语言为一个联邦)
   - [2. 尽量以 `const`、`enum`、`inline` 替换 `#define`](./Effective%20C++.md#2-尽量以-constenuminline-替换-define)
