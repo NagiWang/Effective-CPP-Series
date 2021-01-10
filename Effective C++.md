@@ -8,7 +8,7 @@
   - [2.3. 宏函数](#23-宏函数)
   - [2.4. Summary](#24-summary)
 - [3. 尽可能使用 `const`](#3-尽可能使用-const)
-  - [3.1. `const` 出现在 `*` 左或右意义相同](#31-const-出现在--左或右意义相同)
+  - [3.1. `const` 的位置](#31-const-的位置)
   - [3.2. 对于 **iterator**](#32-对于-iterator)
   - [3.3. 令函数返回一个常量值](#33-令函数返回一个常量值)
   - [3.4. `const` 成员函数](#34-const-成员函数)
@@ -36,6 +36,11 @@
   - [7.1. 多态基类 (polymorphic base classes)](#71-多态基类-polymorphic-base-classes)
   - [7.2. 抽象类 (abstract classes)](#72-抽象类-abstract-classes)
   - [7.3. Summary](#73-summary)
+- [8. 别让 **异常** 逃离 **析构函数**](#8-别让-异常-逃离-析构函数)
+  - [8.1. **析构函数** 抛出异常便结束程序](#81-析构函数-抛出异常便结束程序)
+  - [8.2. **析构函数** 吞下异常](#82-析构函数-吞下异常)
+  - [8.3. 更好的策略](#83-更好的策略)
+  - [8.4. Summary](#84-summary)
 
 ---
 
@@ -181,13 +186,16 @@ constexpr auto callWithMax = [] <typename T> (const T &a, const T &b) {
 
 # 3. 尽可能使用 `const`
 
-## 3.1. `const` 出现在 `*` 左或右意义相同
+## 3.1. `const` 的位置
 
 `const` 出现在 `*` 左边表示指针本身是常量，出现在 `*` 右边表示被指物是常量，写在类型之前还是之后意义相同。
 
 ```cpp
-const int* a;
-int const* b;
+const int* a;  // 指针是常量
+int const* a;  // 指针所指物是常量
+// 以下两种定义意义相同
+const int b;
+int const b;
 ```
 
 ## 3.2. 对于 **iterator**
@@ -200,7 +208,7 @@ const std::vector<int>::iterator iter =
 *iter = 10;       // 没问题，改变的是 iter 所指物
 ++iter;           // 错误！ iter 是 const
 
-std::vector<int>::iterator citer =
+std::vector<int>::const_iterator citer =
     vec.begin();  // citer 作用像个 const T*
 *citer = 10;      // 错误！ *citer 是 const
 +++citer;         // 没问题，改变 citer
@@ -215,7 +223,7 @@ class Rational {};
 const Rational operator* (const Rational &lhs, const Rational &rhs);
 ```
 
-可避免出现如下情况
+可避免出现如下情况：
 
 ```cpp
 Rational a, b, c;
@@ -293,6 +301,8 @@ public:
 ```
 
 ## 3.5. 在 `const` 和 `non-const` 成员函数中避免重复
+
+通过使  `non-const` 版本的成员函数调用 `const` 版本的成员函数可避免某些不必要的重复，方法如下：
 
 ```cpp
 class TextBlock {
@@ -388,7 +398,7 @@ Directory tempDir(params...);
 
 ### 4.3.1. Singleton
 
-将 **non-local static** 对象转变为 **local static** 对象，可通过以下方式改写
+将 **non-local static** 对象转变为 **local static** 对象，可通过以下方式改写：
 
 ```cpp
 class FileSystem { ... };
@@ -412,7 +422,7 @@ Directory& tempDir() {
 }
 ```
 
-但这并不是最好的方法，因为上述方法完全没有考虑如何避免创建多个 `FileSystem` 对象，这在 **Singleton** 模式中是致命的。我们可通过以下方法来避免
+但这并不是最好的方法，因为上述方法完全没有考虑如何避免创建多个 `FileSystem` 对象，这在 **Singleton** 模式中是致命的。我们可通过以下方法来避免：
 
 ```cpp
 struct FileSystem {
@@ -461,7 +471,7 @@ Directory& tempDir() {
 class Empty {};
 ```
 
-**C++** 处理之后等价于你写了如下代码
+**C++** 处理之后等价于你写了如下代码：
 
 ```cpp
 class Empty {
@@ -475,7 +485,7 @@ public:
 };
 ```
 
-如果你没自己声明，**C++** 默默为你声明 **copy 构造函数**、**copy assignment 操作符**、**析构函数**。此外，如果你没有声明任何**构造函数**，**C++** 便会为你声明一个 **default 构造函数**。所有这些函数都是 `public` 且 `inline` 的。若你自己同时没声明 **copy 构造函数**、**copy assignment 操作符**、**析构函数** 三者，**C++** 还会为你声明 **move 构造函数** 和 **move assignment 操作符** *（留在 **Effective Modern C++** 中讨论）*。
+如果你没自己声明，**C++** 默默为你声明 **copy 构造函数**、**copy assignment 操作符**、**析构函数**。此外，如果你没有声明任何**构造函数**，**C++** 便会为你声明一个 **default 构造函数**。所有这些函数都是 `public` 且 `inline` 的。若你自己同时没声明 **copy 构造函数**、**copy assignment 操作符**、**析构函数** 三者，**C++** 还会为你声明 **move 构造函数** 和 **move assignment 操作符** *(留在 **Effective Modern C++** 中讨论)*。
 
 ## 5.2. **default 构造函数** 和 **析构函数**
 
@@ -496,7 +506,7 @@ public:
 
 # 6. 若不想使用编译器自动生成的函数，应当明确拒绝
 
-通常如果你不希望 `class` 支持某一特定机能，只要不声明对应的函数即可。但这个策略对**copy 构造函数** 和 **copy assignment 操作符**并不起作用[条款 5](#5-了解-c-默默编写并调用哪些函数)已经指出。如果你不希望你的 `class` 被复制，以下几个方法可以避免此问题
+通常如果你不希望 `class` 支持某一特定机能，只要不声明对应的函数即可。但这个策略对**copy 构造函数** 和 **copy assignment 操作符**并不起作用[条款 5](#5-了解-c-默默编写并调用哪些函数)已经指出。如果你不希望你的 `class` 被复制，以下几个方法可以避免此问题：
 
 ## 6.1. 声明为 `private`
 
@@ -542,7 +552,7 @@ public:
 };
 ```
 
-如果想要在 **C++ 0x** 或 **C++ 1x** 中都能通过继承某个 **class** 达到阻止编译器生成 **copy 构造函数** 和 **copy assignment 操作符** 的目的的话，可转向使用 `boost::noncopyable`，其定义如下 *(简化版)*
+如果想要在 **C++ 0x** 或 **C++ 1x** 中都能通过继承某个 **class** 达到阻止编译器生成 **copy 构造函数** 和 **copy assignment 操作符** 的目的的话，可转向使用 `boost::noncopyable`，其定义如下 *(简化版)*：
 
 ```cpp
 class noncopyable {
@@ -575,7 +585,7 @@ public:
 };
 ```
 
-**Uncopyable** *(或  `boost::noncopyable`)* 具备以下几个特点
+**Uncopyable** *(或  `boost::noncopyable`)* 具备以下几个特点：
 
 - 不一定以 `public` 继承它。
 - 不含数据
@@ -649,3 +659,110 @@ public:
 - **多态基类 (polymorphic base classes)** 应该声明一个 **virtual 析构函数**。
 - 如果 `class` 内含任何 **virtual 函数** ，它就应该有一个 **virtual 析构函数**。
 - **classes** 如果不是设计作为 **base class** 使用，或不是为了具备 **多态性**，则不应该声明 **virtual 析构函数**。
+
+---
+
+# 8. 别让 **异常** 逃离 **析构函数** 
+
+```cpp
+class Widget {
+public:
+    ...
+    ~Widget() { ... };  // 假设这里可能吐出一个异常
+};
+
+void doSomeThing() {
+    std::vector<Widget> v;
+    ...
+}                       // v 在这里被销毁
+```
+
+假设 `vector v` 含有10个 `Widget`，而在析构第一个元素期间，有个异常被抛出，其余9个 `Widget` 也应该被悉数销毁 *(否则可能会发生资源泄漏)*。因此 `v` 应该调用它们各个的析构函数。但假设在那些调用期间，第2个 `Widget` 的析构函数又抛出异常了。现在就有两个异常同时作用，程序不是结束执行就是导致不明确的行为。那么对于这种情况该如何解决呢？对于如下代码：
+
+```cpp
+class DBConnection {               // Database Connection
+public:
+    ...
+    static DBConnection create();  // 返回一个 DBConnection 对象
+    void close();                  // 关闭联机，失败则抛出异常
+};
+
+class DBConn {                     // DBConnection 管理类
+private:
+    DBConnection db;
+public:
+    ...
+    ~DBConn() {                    // 确保数据库连接总是会被关闭
+        db.close();
+    }
+};
+```
+
+客户代码：
+
+```cpp
+{                                        // 开启一个区块
+    DBConn dbc(DBConnection::create());  // 建立 DBConnection 对象并交由 DBConn 管理
+    ...
+}                                        // 区块结束，为 DBConn 被销毁，自动为 DBConnection 对象调用 close
+```
+
+如果 `db.close()` 调用异常，`DBConn` 析构函数会传播该异常，也就是允许它离开这个 **析构函数**。以下两个方法可避免该问题：
+
+## 8.1. **析构函数** 抛出异常便结束程序
+
+如果 `db.close()` 抛出异常，就通过调用 `absort()` 结束程序
+
+```cpp
+DBConn::~DBConn() {
+    try { db.close(); }
+    catch (...) {
+        ...             // 制作 log 日志
+        std::absort();  // 终止程序
+    }
+}
+```
+
+## 8.2. **析构函数** 吞下异常
+
+```cpp
+DBConn::~DBConn() {
+    try { db.close(); }
+    catch (...) {
+        ...  // 制作 log 日志，但不终止程序
+    }
+}
+```
+
+## 8.3. 更好的策略
+
+以上两种方法都无法对 *导致 close 抛出异常* 的情况作出反应，一个更好的策略是重新设计 `DBConn` 的接口
+
+```cpp
+class DBConn {       // DBConnection 管理类
+private:
+    DBConnection db;
+    bool closed;
+public:
+    ... 
+    void close() {
+        db.close();
+        closed = true;
+    }
+    ~DBConn() {      // 确保数据库连接总是会被关闭
+        if (!closed) {
+            try { db.close(); }
+            catch (...) {
+                ...  // 制作 log 日志
+            }
+        }
+    }
+};
+```
+
+把调用 `close` 的责任从 `DBConn` **析构函数** 手中转移到 `DBConn` 的客户手上 *(甩锅)*。
+
+## 8.4. Summary
+
+- **析构函数** 绝对不要吐出异常。如果一个被析构函数可能抛出异常，**析构函数** 应该捕获它，然后吞下它或者结束程序。
+- 如果客户需要对某个操作函数运行期间抛出的异常作出反应，那么 `class` 应该提供一个普通函数。
